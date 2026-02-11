@@ -254,7 +254,7 @@ class Mastodon(Internals):
 
 \
         If not passed in, `quote_approval_policy` defaults to match the current account's default-quote-policy setting. 
-        If the status’ visibility is private or direct, this parameter will be ignored and the policy will be set to nobody
+        If the status' visibility is private or direct, this parameter will be ignored and the policy will be set to nobody
         Note that this parameter is not available on Mastodon versions lower than 4.5.
 
         The `spoiler_text` parameter is a string to be shown as a warning before
