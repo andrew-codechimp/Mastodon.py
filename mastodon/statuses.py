@@ -114,7 +114,7 @@ class Mastodon(Internals):
     # Writing data: Statuses
     ###
     def __status_internal(self, status: Optional[str], in_reply_to_id: Optional[Union[Status, IdType]] = None, media_ids: Optional[List[Union[MediaAttachment, IdType]]] = None,
-                    sensitive: Optional[bool] = False, visibility: Optional[str] = None, spoiler_text: Optional[str] = None, language: Optional[str] = None, 
+                    sensitive: Optional[bool] = False, visibility: Optional[str] = None, quote_approval_policy: Optional[str] = None, spoiler_text: Optional[str] = None, language: Optional[str] = None,
                     idempotency_key: Optional[str] = None, content_type: Optional[str] = None, scheduled_at: Optional[datetime] = None, 
                     poll: Optional[Union[Poll, IdType]] = None, quote_id: Optional[Union[Status, IdType]] = None, edit: bool = False,
                     strict_content_type: bool = False, media_attributes: Optional[List[Dict[str, Any]]] = None) -> Union[Status, ScheduledStatus]:
@@ -158,6 +158,15 @@ class Mastodon(Internals):
             params_initial['visibility'] = params_initial['visibility'].lower()
             if params_initial['visibility'] not in valid_visibilities:
                 raise ValueError(f'Invalid visibility value! Acceptable values are {valid_visibilities}')
+
+        # Validate quote_approval_policy parameter
+        valid_quote_approval_policies = ['public', 'followers', 'nobody']
+        if params_initial['quote_approval_policy'] is None:
+            del params_initial['quote_approval_policy']
+        else:
+            params_initial['quote_approval_policy'] = params_initial['quote_approval_policy'].lower()
+            if params_initial['quote_approval_policy'] not in valid_quote_approval_policies:
+                raise ValueError(f'Invalid quote approval policy value! Acceptable values are {valid_quote_approval_policies}')        
 
         if params_initial['language'] is None:
             del params_initial['language']
@@ -206,9 +215,9 @@ class Mastodon(Internals):
             # Edit
             return self.__api_request('PUT', f'/api/v1/statuses/{self.__unpack_id(edit)}', params, headers=headers, use_json=use_json, override_type=cast_type)
 
-    @api_version("1.0.0", "2.8.0")
+    @api_version("1.0.0", "4.5.0")
     def status_post(self, status: str, in_reply_to_id: Optional[Union[Status, IdType]] = None, media_ids: Optional[List[Union[MediaAttachment, IdType]]] = None,
-                    sensitive: bool = False, visibility: Optional[str] = None, spoiler_text: Optional[str] = None, language: Optional[str] = None, 
+                    sensitive: bool = False, visibility: Optional[str] = None, quote_approval_policy: Optional[str] = None, spoiler_text: Optional[str] = None, language: Optional[str] = None, 
                     idempotency_key: Optional[str] = None, content_type: Optional[str] = None, scheduled_at: Optional[datetime] = None, 
                     poll: Optional[Union[Poll, IdType]] = None, quote_id: Optional[Union[Status, IdType]] = None, strict_content_type: bool = False) -> Union[Status, ScheduledStatus]:
         """
@@ -236,6 +245,17 @@ class Mastodon(Internals):
         default-privacy setting (starting with Mastodon version 1.6) or its
         locked setting - ``'private'`` if the account is locked, ``'public'`` otherwise
         (for Mastodon versions lower than 1.6).
+
+        The `quote_approval_policy` parameter is a string value and accepts any of:
+        
+        * ``'public'`` - post will be quotable by anyone, known in Mastodon's UI as "Anyone"
+        * ``'followers'`` - post will be quotable only by **followers**, known in Mastodon's UI as "Followers only"
+        * ``'nobody'`` - post will be quotable only by the account that posted it, , known in Mastodon's UI as "Just me"
+
+\
+        If not passed in, `quote_approval_policy` defaults to match the current account's default-quote-policy setting. 
+        If the status’ visibility is private or direct, this parameter will be ignored and the policy will be set to nobody
+        Note that this parameter is not available on Mastodon versions lower than 4.5.
 
         The `spoiler_text` parameter is a string to be shown as a warning before
         the text of the status.  If no text is passed in, no warning will be
@@ -281,6 +301,7 @@ class Mastodon(Internals):
             media_ids,
             sensitive,
             visibility,
+            quote_approval_policy,
             spoiler_text,
             language,
             idempotency_key,

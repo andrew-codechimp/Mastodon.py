@@ -119,11 +119,14 @@ def test_toot(api):
 @pytest.mark.parametrize('visibility', (None, 'direct', 'private', 'unlisted', 'public',
         pytest.param('foobar', marks=pytest.mark.xfail(strict=True))))
 @pytest.mark.parametrize('spoiler_text', (None, 'Content warning'))
-def test_status_post(api, visibility, spoiler_text):
+@pytest.mark.parametrize('quote_approval_policy', (None, 'public', 'followers', 'nobody',
+        pytest.param('foobar', marks=pytest.mark.xfail(strict=True))))
+def test_status_post(api, visibility, spoiler_text, quote_approval_policy,):
     status = api.status_post(
             'Toot!',
             visibility=visibility,
-            spoiler_text=spoiler_text)
+            spoiler_text=spoiler_text,
+            quote_approval_policy=quote_approval_policy)
     try:
         assert status
         if visibility:
