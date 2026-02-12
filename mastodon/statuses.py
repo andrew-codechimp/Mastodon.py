@@ -114,8 +114,9 @@ class Mastodon(Internals):
     # Writing data: Statuses
     ###
     def __status_internal(self, status: Optional[str], in_reply_to_id: Optional[Union[Status, IdType]] = None, media_ids: Optional[List[Union[MediaAttachment, IdType]]] = None,
-                    sensitive: Optional[bool] = False, visibility: Optional[str] = None, quote_approval_policy: Optional[str] = None, spoiler_text: Optional[str] = None, language: Optional[str] = None,
+                    sensitive: Optional[bool] = False, visibility: Optional[str] = None, spoiler_text: Optional[str] = None, language: Optional[str] = None,
                     idempotency_key: Optional[str] = None, content_type: Optional[str] = None, scheduled_at: Optional[datetime] = None, 
+                    quoted_status_id: Optional[Union[Status, IdType]] = None, quote_approval_policy: Optional[str] = None,
                     poll: Optional[Union[Poll, IdType]] = None, quote_id: Optional[Union[Status, IdType]] = None, edit: bool = False,
                     strict_content_type: bool = False, media_attributes: Optional[List[Dict[str, Any]]] = None) -> Union[Status, ScheduledStatus]:
         """
@@ -138,6 +139,9 @@ class Mastodon(Internals):
 
         if in_reply_to_id is not None:
             in_reply_to_id = self.__unpack_id(in_reply_to_id)
+
+        if quoted_status_id is not None:
+            quoted_status_id = self.__unpack_id(quoted_status_id)
 
         if scheduled_at is not None:
             scheduled_at = self.__consistent_isoformat_utc(scheduled_at)
@@ -217,8 +221,9 @@ class Mastodon(Internals):
 
     @api_version("1.0.0", "4.5.0")
     def status_post(self, status: str, in_reply_to_id: Optional[Union[Status, IdType]] = None, media_ids: Optional[List[Union[MediaAttachment, IdType]]] = None,
-                    sensitive: bool = False, visibility: Optional[str] = None, quote_approval_policy: Optional[str] = None, spoiler_text: Optional[str] = None, language: Optional[str] = None, 
+                    sensitive: bool = False, visibility: Optional[str] = None, spoiler_text: Optional[str] = None, language: Optional[str] = None, 
                     idempotency_key: Optional[str] = None, content_type: Optional[str] = None, scheduled_at: Optional[datetime] = None, 
+                    quoted_status_id: Optional[Union[Status, IdType]] = None, quote_approval_policy: Optional[str] = None, 
                     poll: Optional[Union[Poll, IdType]] = None, quote_id: Optional[Union[Status, IdType]] = None, strict_content_type: bool = False) -> Union[Status, ScheduledStatus]:
         """
         Post a status. Can optionally be in reply to another status and contain
@@ -245,6 +250,13 @@ class Mastodon(Internals):
         default-privacy setting (starting with Mastodon version 1.6) or its
         locked setting - ``'private'`` if the account is locked, ``'public'`` otherwise
         (for Mastodon versions lower than 1.6).
+
+        The `quoted_status_id` parameter specifies the id of a status to be quoted. 
+        Will raise an error if the status does not exist, the author does not have access to it, or quoting is denied by Mastodon`s understanding 
+        of the attached quote policy. 
+        All posts except Private Mentions (direct visibility) are quotable by their author. Quoting a private post will restrict the quoting post`s 
+        visibility to private or direct (if the given visibility is public or unlisted, private will be used instead). 
+        An error will be returned when making a quote post with direct visibility and the quote author is not explicitly mentioned.
 
         The `quote_approval_policy` parameter is a string value and accepts any of:
         
@@ -300,12 +312,13 @@ class Mastodon(Internals):
             media_ids,
             sensitive,
             visibility,
-            quote_approval_policy,
             spoiler_text,
             language,
             idempotency_key,
             content_type,
             scheduled_at,
+            quoted_status_id,
+            quote_approval_policy,
             poll,
             quote_id,
             edit=None,
